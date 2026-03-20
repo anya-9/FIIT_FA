@@ -159,7 +159,7 @@ public class RedBlackTree<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, RbN
                 }
             
                 // оба ребенка брата черные (даже если их нет - они черные)
-                if (brother != null)
+                else if (brother != null)
                 {
                     if ((brother.Left == null || brother.Left.Color == RbColor.Black) &&
                         (brother.Right == null || brother.Right.Color == RbColor.Black))
@@ -208,7 +208,7 @@ public class RedBlackTree<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, RbN
                     brother = parent.Left;
                 }
             
-                if (brother != null)
+                else if (brother != null)
                 {
                     if ((brother.Left == null || brother.Left.Color == RbColor.Black) &&
                         (brother.Right == null || brother.Right.Color == RbColor.Black))
