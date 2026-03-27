@@ -78,59 +78,49 @@ public class RedBlackTree<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, RbN
             Root.Color = RbColor.Black;
     }   
 
-    public override bool Remove(TKey key)
+   public override bool Remove(TKey key)
     {
         var nodeToDelete = FindNode(key);
         if (nodeToDelete == null) return false;
 
-        // 0 или 1 ребенок (если удаляемый вдруг черный, то потом проверим все)
-        if (nodeToDelete.Left == null || nodeToDelete.Right == null)
+        Count--;
+        
+        // если 2ребенка - то приводим к случаю 1 или 0 детей
+        if (nodeToDelete.Left != null && nodeToDelete.Right != null)
         {
-            var parent = nodeToDelete.Parent;
-            var child = nodeToDelete.Left ?? nodeToDelete.Right;
-            Transplant(nodeToDelete, child); // вместо удаляемого теперь ребенок
+            var successor = GetMinimum(nodeToDelete.Right);
 
-            if (nodeToDelete.Color == RbColor.Black)
+            var tempNodeKey = nodeToDelete.Key;
+            nodeToDelete.Key = successor.Key;
+            successor.Key = tempNodeKey;
+
+            var tempNodeValue = nodeToDelete.Value;
+            nodeToDelete.Value = successor.Value;
+            successor.Value = tempNodeValue;
+
+            nodeToDelete = successor;
+        }
+        
+        // у удаляемого 0 или 1 ребенок
+        var child = nodeToDelete.Left ?? nodeToDelete.Right;
+        var parent = nodeToDelete.Parent;
+        var isNodeBlack = nodeToDelete.Color == RbColor.Black;
+        
+
+        Transplant(nodeToDelete, child);
+        
+        if (isNodeBlack)
+        {
+            if (child != null && child.Color == RbColor.Red)
+            {
+                child.Color = RbColor.Black;
+            }
+            else
             {
                 OnNodeRemoved(parent, child);
             }
         }
-
-        else // 2 ребенка
-        {
-            // ищем преемника (минимальный в правом поддереве)
-            var successor = GetMinimum(nodeToDelete.Right);
-            var originalColor = successor.Color;
-            var childOfSuccessor = successor.Right;
-            var parentOfSuccessor = successor.Parent;
-
-            // если преемник не прямой ребенок удаляемого
-            if (successor.Parent != nodeToDelete)
-            {
-                // поднимаем правого ребенка преемника
-                Transplant(successor, successor.Right);
-                successor.Right = nodeToDelete.Right;
-                if (successor.Right != null) 
-                    successor.Right.Parent = successor;
-            }
-
-            // ставим преемника на место удаляемого
-            Transplant(nodeToDelete, successor);
-            successor.Left = nodeToDelete.Left;
-            if (successor.Left != null)
-                successor.Left.Parent = successor;
-            
-            successor.Color = nodeToDelete.Color;
-
-            // если удалили черный узел - нужно проверять все
-            if (originalColor == RbColor.Black)
-            {
-                var actualParent = (parentOfSuccessor == nodeToDelete) ? successor : parentOfSuccessor; // если был прямым наследником, то родитель nodeToDelete, а ее уже нет. новый родитель - это сам successor
-                OnNodeRemoved(actualParent, childOfSuccessor);
-            }
-        }
-
-        Count--;
+        
         return true;
     }
 
@@ -159,12 +149,12 @@ public class RedBlackTree<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, RbN
                 }
             
                 // оба ребенка брата черные (даже если их нет - они черные)
-                else if (brother != null)
+                if (brother != null)
                 {
                     if ((brother.Left == null || brother.Left.Color == RbColor.Black) &&
                         (brother.Right == null || brother.Right.Color == RbColor.Black))
                     {
-                        brother.Color = RbColor.Red; // у родителя с этой стороны уменьшилась черная высота, так что переходим к родителю разбираться 
+                        brother.Color = RbColor.Red; // у родителя с этой стороны тоже уменьшилась черная высота, так что переходим к родителю разбираться 
                         child = parent;
                         parent = child.Parent;
                     }
@@ -181,7 +171,7 @@ public class RedBlackTree<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, RbN
                         }
                     
                         if (brother != null) {
-                            brother!.Color = parent.Color;
+                            brother.Color = parent.Color;
                             parent.Color = RbColor.Black;
                             if (brother.Right != null)
                                 brother.Right.Color = RbColor.Black;
@@ -208,7 +198,7 @@ public class RedBlackTree<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, RbN
                     brother = parent.Left;
                 }
             
-                else if (brother != null)
+                if (brother != null)
                 {
                     if ((brother.Left == null || brother.Left.Color == RbColor.Black) &&
                         (brother.Right == null || brother.Right.Color == RbColor.Black))
